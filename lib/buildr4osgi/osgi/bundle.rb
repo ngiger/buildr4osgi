@@ -12,6 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 # License for the specific language governing permissions and limitations under
 # the License.
+# STDOUT.puts "i am in #{File.expand_path(__FILE__)}"
 
 module OSGi #:nodoc:
   
@@ -51,7 +52,6 @@ module OSGi #:nodoc:
             return !package_manifest.first[Bundle::B_EXPORT_PKG][criteria[:exports_package]].nil?
           end
         elsif (package_manifest.first[Bundle::B_NAME].keys.first == criteria[:name] || id == criteria[:name])
-          
           if criteria[:version]
             if criteria[:version].is_a?(VersionRange)
               return criteria[:version].in_range(version)
@@ -93,7 +93,8 @@ module OSGi #:nodoc:
       packaging = project.packages.select {|package| package.is_a?(BundlePackaging)}
       raise "More than one bundle packaging is defined over the project #{project.id}, see BOSGI-16." if packaging.size > 1
       return nil if packaging.empty?
-      manifest = ::Buildr::Packaging::Java::Manifest.new(File.exists?("META-INF/MANIFEST.MF") ? File.read("META-INF/MANIFEST.MF") : nil) 
+      mfName = "#{project.base_dir}/META-INF/MANIFEST.MF"
+      manifest = ::Buildr::Packaging::Java::Manifest.new(File.exists?(mfName) ? File.read(mfName) : nil) 
       manifest.main.merge!(project.manifest)
       manifest.main.merge!(packaging.first.manifest)
       fromManifest(Manifest.read(manifest.to_s), packaging.first.to_s)
@@ -117,7 +118,7 @@ module OSGi #:nodoc:
       
       #Parse the version
       version = manifest.first[B_VERSION].nil? ? nil : manifest.first[B_VERSION].keys.first
-      
+
       #Read the imports
       imports = []
       manifest.first[B_IMPORT_PKG].each_pair {|key, value| imports << BundlePackage.new(key.strip, value["version"], :is_export => false, :optional => value[B_RESOLUTION] == "optional")} unless manifest.first[B_IMPORT_PKG].nil?
@@ -162,6 +163,7 @@ module OSGi #:nodoc:
 
     def initialize(name, version, args = {:file => nil, :bundles=>[], :imports => [], :optional => false}) #:nodoc:
       @name = name
+     # version.gsub!('"', '') if version
       @version = VersionRange.parse(version) || (version.nil? ? nil : Version.new(version))
       @bundles = args[:bundles] || []
       @imports = args[:imports] || []
@@ -276,3 +278,4 @@ module OSGi #:nodoc:
 
   end
 end
+

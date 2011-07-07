@@ -13,8 +13,9 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+puts "bin in #{__FILE__}"
 
-gem 'mojombo-jekyll', '~> 0.5.2' # skip past some buggy versions
+gem 'mojombo-jekyll', '~> 0.5.4' # skip past some buggy versions
 require 'rake/tasklib'
 require 'jekyll'
 

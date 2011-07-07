@@ -115,7 +115,7 @@ module OSGi #:nodoc:
           if criteria[:version].is_a?(VersionRange)
             selected = selected.select {|b| criteria[:version].in_range(b.version)}
           else
-            selected = selected.select {|b| b.version == criteria[:version]}
+            selected = selected.select {|b| b.version >= criteria[:version]}
           end
         end
       end

@@ -12,7 +12,7 @@
 # WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the
 # License for the specific language governing permissions and limitations under
 # the License.
-
+$LOAD_PATH.unshift File.expand_path(File.dirname(File.dirname(__FILE__)))
 
 task 'doc:setup'
 begin # For the Web site, we use the SDoc RDoc generator/theme (http://github.com/voloko/sdoc/)
@@ -36,7 +36,9 @@ end
 
 
 begin
+puts "Before require"
   require 'rakelib/jekylltask'
+puts "After require"
 
   desc "Generate Buildr documentation in _site/"
   JekyllTask.new :jekyll do |task|

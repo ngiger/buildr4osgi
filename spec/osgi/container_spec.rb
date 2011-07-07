@@ -86,6 +86,11 @@ MANIFEST
     e2.find(:name=> "org.eclipse.ui", :version => "3.5.0.M_20090107").should_not be_empty
   end
   
+  it 'should find a specific bundle in the container with a newer version' do
+    e2 = OSGi::Container.new(@eclipse_instances.last)
+    e2.find(:name=> "org.eclipse.ui", :version => "3.4.0").should_not be_empty
+  end
+  
   it 'should find a specific fragment in the container' do
     e1 = OSGi::Container.new(@eclipse_instances.first)
     e1.find_fragments(:name=> "org.fragment").should_not be_empty
