@@ -56,7 +56,7 @@ module OSGi #:nodoc:
             if criteria[:version].is_a?(VersionRange)
               return criteria[:version].in_range(version)
             else
-              return criteria[:version] == version
+              return criteria[:version] <= version
             end 
           else
             # depending just on the name, returning true then.
