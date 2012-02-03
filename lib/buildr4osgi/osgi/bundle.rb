@@ -113,6 +113,10 @@ module OSGi #:nodoc:
       bundles = []
       manifest.first[B_REQUIRE].each_pair {|key, value| bundles << Bundle.new(key.strip, value[B_DEP_VERSION], {:optional => value[B_RESOLUTION] == "optional"}) unless "system.bundle" == key} unless manifest.first[B_REQUIRE].nil?
       exports = []
+      
+      # add dependency to the fragment host
+      manifest.first[B_FRAGMENT_HOST].each_pair {|key, value| bundles << Bundle.new(key.strip, value["bundle-version"])} unless (manifest.first[B_FRAGMENT_HOST].nil?)
+                                                             
       manifest.first[B_EXPORT_PKG].each_pair {|key, value| exports << BundlePackage.new(key.strip, value["version"])} unless manifest.first[B_EXPORT_PKG].nil?
       
       #Parse the version
