@@ -16,7 +16,7 @@
 
 Gem::Specification.new do |spec|
   spec.name           = 'buildr4osgi'
-  spec.version        = "0.9.6.99"
+  spec.version        = "0.9.6.92"
   spec.author         = 'Antoine Toulme'
   spec.email          = "atoulme@intalio.com"
   spec.homepage       = "http://buildr.apache.org/"

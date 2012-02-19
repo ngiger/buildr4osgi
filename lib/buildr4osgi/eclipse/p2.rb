@@ -47,15 +47,18 @@ module Buildr4OSGi
           p2_task.enhance do 
             targetP2Repo = File.join(project.base_dir, "target", "p2repository")
             mkpath targetP2Repo
+            launcherPlugin = Dir.glob("#{ENV['OSGi']}/plugins/org.eclipse.equinox.launcher_*")[0]
             Buildr::unzip(targetP2Repo=>@site.to_s).extract
-            eclipseSDK = Buildr::artifact("org.eclipse:eclipse-SDK:zip:3.6M3-win32")
-            eclipseSDK.invoke
-            Buildr::unzip(File.dirname(eclipseSDK.to_s) => eclipseSDK.to_s).extract
+            if !launcherPlugin
+              eclipseSDK = Buildr::artifact("org.eclipse:eclipse-SDK:zip:3.6M3-win32")
+              eclipseSDK.invoke
+              Buildr::unzip(File.dirname(eclipseSDK.to_s) => eclipseSDK.to_s).extract
 
-            launcherPlugin = Dir.glob("#{File.dirname(eclipseSDK.to_s)}/eclipse/plugins/org.eclipse.equinox.launcher_*")[0]
-
+              launcherPlugin = Dir.glob("#{File.dirname(eclipseSDK.to_s)}/eclipse/plugins/org.eclipse.equinox.launcher_*")[0]
+            end
             cmdline = <<-CMD
-            java -jar #{launcherPlugin} -application org.eclipse.equinox.p2.publisher.UpdateSitePublisher
+            java -jar #{launcherPlugin} 
+            -application org.eclipse.equinox.p2.publisher.UpdateSitePublisher
             -metadataRepository file:#{targetP2Repo} 
             -artifactRepository file:#{targetP2Repo}
             -metadataRepositoryName #{project.name}_#{project.version}
