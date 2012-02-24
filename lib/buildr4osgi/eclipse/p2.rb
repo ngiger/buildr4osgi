@@ -47,7 +47,8 @@ module Buildr4OSGi
           p2_task.enhance do 
             targetP2Repo = File.join(project.base_dir, "target", "p2repository")
             mkpath targetP2Repo
-            launcherPlugin = Dir.glob("#{ENV['OSGi']}/plugins/org.eclipse.equinox.launcher_*")[0]
+            # Using variable OSGi fails if it points to an p2 mirror and not an eclipse installation
+            launcherPlugin = Dir.glob("#{ENV['P2_EXE']}/plugins/org.eclipse.equinox.launcher_*")[0]
             Buildr::unzip(targetP2Repo=>@site.to_s).extract
             if !launcherPlugin
               eclipseSDK = Buildr::artifact("org.eclipse:eclipse-SDK:zip:3.6M3-win32")
