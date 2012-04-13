@@ -45,20 +45,19 @@ module Buildr4OSGi
           #add a prerequisite to the list of prerequisites, gives a chance
           #for other prerequisites to be placed before this block is executed.
           p2_task.enhance do 
-            targetP2Repo = File.join(project.base_dir, "target", "p2repository")
+            targetP2Repo = File.join(project.path_to(:target), "p2repository")
             mkpath targetP2Repo
-            # Using variable OSGi fails if it points to an p2 mirror and not an eclipse installation
-            launcherPlugin = Dir.glob("#{ENV['P2_EXE']}/plugins/org.eclipse.equinox.launcher_*")[0]
+            launcherPlugin = Dir.glob("#{ENV['P2_EXE']}/plugins/org.eclipse.equinox.launcher_*")
             Buildr::unzip(targetP2Repo=>@site.to_s).extract
-            if !launcherPlugin
+            if launcherPlugin.size == 0
               eclipseSDK = Buildr::artifact("org.eclipse:eclipse-SDK:zip:3.6M3-win32")
               eclipseSDK.invoke
               Buildr::unzip(File.dirname(eclipseSDK.to_s) => eclipseSDK.to_s).extract
-
-              launcherPlugin = Dir.glob("#{File.dirname(eclipseSDK.to_s)}/eclipse/plugins/org.eclipse.equinox.launcher_*")[0]
+              launcherPlugin = Dir.glob("#{File.dirname(eclipseSDK.to_s)}/eclipse/plugins/org.eclipse.equinox.launcher_*")
             end
+            raise "org.eclipse.equinox.launcher_* must be present in environment variable P2_EXE or OSGi" if  launcherPlugin.size == 0
             cmdline = <<-CMD
-            java -jar #{launcherPlugin} 
+            java -jar #{launcherPlugin[0]} 
             -application org.eclipse.equinox.p2.publisher.UpdateSitePublisher
             -metadataRepository file:#{targetP2Repo} 
             -artifactRepository file:#{targetP2Repo}
@@ -67,6 +66,7 @@ module Buildr4OSGi
             -source #{targetP2Repo} 
             -configs gtk.linux.x86 
             -publishArtifacts -compress
+            -append
             -clean -consoleLog
             CMD
             info "Invoking P2's metadata generation: #{cmdline}"
