@@ -13,12 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
-require 'buildr/core/project'
-require 'buildr/core/build'
-require 'buildr/core/compile'
-
-
 module Buildr
 
   # The underlying test framework used by TestTask.
@@ -171,7 +165,7 @@ module Buildr
 
       # Used by the test/integration rule to only run tests that match the specified names.
       def only_run(tests) #:nodoc:
-        tests = tests.map { |name| name =~ /\*/ ? name : "*#{name}*" }
+        tests = wildcardify(tests)
         # Since the tests may reside in a sub-project, we need to set the include/exclude pattern on
         # all sub-projects, but only invoke test on the local project.
         Project.projects.each { |project| project.test.send :only_run, tests }
@@ -182,6 +176,37 @@ module Buildr
         # Since the tests may reside in a sub-project, we need to set the include/exclude pattern on
         # all sub-projects, but only invoke test on the local project.
         Project.projects.each { |project| project.test.send :only_run_failed }
+      end
+
+      # Used by the test/integration rule to clear all previously included/excluded tests.
+      def clear()
+        Project.projects.each do |project|
+          project.test.send :clear
+        end
+      end
+
+      # Used by the test/integration to include specific tests
+      def include(includes)
+        includes = wildcardify(Array(includes))
+        Project.projects.each do |project|
+          project.test.send :include, *includes if includes.size > 0
+          project.test.send :forced_need=, true
+        end
+      end
+
+      # Used by the test/integration to exclude specific tests
+      def exclude(excludes)
+        excludes = wildcardify(Array(excludes))
+        Project.projects.each do |project|
+          project.test.send :exclude, *excludes if excludes.size > 0
+          project.test.send :forced_need=, true
+        end
+      end
+
+    private
+
+      def wildcardify(strings)
+        strings.map { |name| name =~ /\*/ ? name : "*#{name}*" }
       end
     end
 
@@ -367,6 +392,13 @@ module Buildr
       self
     end
 
+    # Clear all test includes and excludes and returns self
+    def clear
+      @include = []
+      @exclude = []
+      self
+    end
+
     # *Deprecated*: Use tests instead.
     def classes
       Buildr.application.deprecated 'Call tests instead of classes'
@@ -423,7 +455,7 @@ module Buildr
     # We read the last test failures if any and return them.
     #
     def last_failures
-      @last_failures ||= failures_to.exist? ? File.read(failures_to.to_s).split('\n') : []
+      @last_failures ||= failures_to.exist? ? File.read(failures_to.to_s).split("\n") : []
     end
 
     # The path to the file that stores the time stamp of the last successful test run.
@@ -438,6 +470,9 @@ module Buildr
 
     # The project this task belongs to.
     attr_reader :project
+
+    # Whether the tests are forced
+    attr_accessor :forced_need
 
   protected
 
@@ -460,7 +495,7 @@ module Buildr
     # Returns true if the specified test name matches the inclusion/exclusion pattern. Used to determine
     # which tests to execute.
     def include?(name)
-      (@include.empty? || @include.any? { |pattern| File.fnmatch(pattern, name) }) &&
+      ((@include.empty? && !@forced_need)|| @include.any? { |pattern| File.fnmatch(pattern, name) }) &&
         !@exclude.any? { |pattern| File.fnmatch(pattern, name) }
     end
 
@@ -480,7 +515,7 @@ module Buildr
           @passed_tests = @framework.run(@tests, dependencies)
         rescue Exception=>ex
           error "Test framework error: #{ex.message}"
-          error ex.backtrace.join("\n") if Buildr.application.options.trace
+          error ex.backtrace.join("\n") if trace?
           @passed_tests = []
         end
         @failed_tests = @tests - @passed_tests
@@ -509,7 +544,6 @@ module Buildr
     # Limit running tests to those who failed the last time.
     def only_run_failed()
       @include = Array(last_failures)
-      @exclude.clear
       @forced_need = true
     end
 
@@ -597,7 +631,18 @@ module Buildr
       # (* and ?) patterns to match multiple tests, see the TestTask#include method.
       rule /^test:.*$/ do |task|
         # The map works around a JRuby bug whereby the string looks fine, but fails in fnmatch.
-        TestTask.only_run task.name.scan(/test:(.*)/)[0][0].split(',').map { |t| "#{t}" }
+        tests = task.name.scan(/test:(.*)/)[0][0].split(',').map(&:to_s)
+        excludes, includes = tests.partition { |t| t =~ /^-/ }
+        if excludes.empty?
+          TestTask.only_run includes
+        else
+          # remove leading '-'
+          excludes.map! { |t| t[1..-1] }
+
+          TestTask.clear
+          TestTask.include(includes.empty? ? ['*'] : includes)
+          TestTask.exclude excludes
+        end
         task('test').invoke
       end
 

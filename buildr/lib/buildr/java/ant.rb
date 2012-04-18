@@ -14,18 +14,15 @@
 # the License.
 
 
-gem 'Antwrap'
+gem 'atoulme-Antwrap'
 autoload :Antwrap, 'antwrap'
 autoload :Logger, 'logger'
-require 'buildr/core/project'
-require 'buildr/core/help'
-
 
 module Buildr
   module Ant
 
     # Which version of Ant we're using by default.
-    VERSION = '1.8.0'
+    VERSION = '1.8.3'
 
     class << self
       # Current version of Ant being used.
@@ -37,8 +34,7 @@ module Buildr
       def dependencies
         # Ant-Trax required for running the JUnitReport task, and there's no other place
         # to put it but the root classpath.
-        @dependencies ||= ["org.apache.ant:ant:jar:#{version}", "org.apache.ant:ant-launcher:jar:#{version}",
-                           "org.apache.ant:ant-trax:jar:#{version}"]
+        @dependencies ||= ["org.apache.ant:ant:jar:#{version}", "org.apache.ant:ant-launcher:jar:#{version}"]
       end
 
     private
@@ -69,12 +65,12 @@ module Buildr
     #   end
     def ant(name, &block)
       options = { :name=>name, :basedir=>Dir.pwd, :declarative=>true }
-      options.merge!(:logger=> Logger.new(STDOUT), :loglevel=> Logger::DEBUG) if Buildr.application.options.trace
+      options.merge!(:logger=> Logger.new(STDOUT), :loglevel=> Logger::DEBUG) if trace?(:ant)
       Java.load
       Antwrap::AntProject.new(options).tap do |project|
         # Set Ant logging level to debug (--trace), info (default) or error only (--quiet).
         project.project.getBuildListeners().get(0).
-          setMessageOutputLevel((Buildr.application.options.trace && 4) || (verbose && 2) || 0)
+          setMessageOutputLevel((trace?(:ant) && 4) || (verbose && 2) || 0)
         yield project if block_given?
       end
     end

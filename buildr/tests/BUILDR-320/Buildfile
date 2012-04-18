@@ -13,7 +13,17 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+define "whole" do 
+  define 'sub' do 
+    define 'C' do 
+      compile.with project('sub:B') 
+    end 
+     
+    define 'A' do 
+    end 
 
-require 'buildr/ide/eclipse'
-require 'buildr/ide/idea'
-require 'buildr/ide/idea7x'
+    define 'B' do 
+      compile.with project('sub:A') 
+    end 
+  end 
+end

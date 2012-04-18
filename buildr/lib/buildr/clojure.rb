@@ -14,11 +14,19 @@
 # the License.
 
 
-require 'buildr/packaging/artifact'
-require 'buildr/packaging/package'
-require 'buildr/packaging/archive'
-require 'buildr/packaging/ziptask'
-require 'buildr/packaging/tar'
-require 'buildr/packaging/gems'
-autoload :Zlib, 'zlib'
-autoload :Zip, 'buildr/packaging/zip'
+module Buildr::Clojure
+
+  REQUIRES = ArtifactNamespace.for(self) do |ns|
+    ns.clojure! 'org.clojure:clojure:jar:1.2.0'
+    ns.jline! 'jline:jline:jar:0.9.94'
+  end
+
+  class << self
+    def dependencies #:nodoc:
+      REQUIRES.artifacts
+    end
+  end
+
+end
+
+require 'buildr/clojure/shell'

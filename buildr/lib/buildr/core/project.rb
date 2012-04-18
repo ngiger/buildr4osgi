@@ -13,10 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
-require 'buildr/core/util'
-
-
 module Buildr
 
   # Symbolic mapping for directory layout.  Used for both the default and custom layouts.
@@ -235,8 +231,9 @@ module Buildr
       #   project(name) => project
       #
       # See Buildr#project.
-      def project(*args) #:nodoc:
+      def project(*args, &block) #:nodoc:
         options = args.pop if Hash === args.last
+        return define(args.first, options, &block) if block
         rake_check_options options, :scope if options
         raise ArgumentError, 'Only one project name at a time' unless args.size == 1
         @projects ||= {}
@@ -557,7 +554,7 @@ module Buildr
     #   define 'foo' do
     #     project.version = '1.0'
     #   end
-    def project(*args)
+    def project(*args, &block)
       if Hash === args.last
         options = args.pop
       else
@@ -566,7 +563,7 @@ module Buildr
       if args.empty?
         self
       else
-        Project.project *(args + [{ :scope=>self.name }.merge(options)])
+        Project.project *(args + [{ :scope=>self.name }.merge(options)]), &block
       end
     end
 
@@ -642,27 +639,30 @@ module Buildr
       remaining = @callbacks.select { |cb| cb.phase == phase }
       known_callbacks = remaining.map { |cb| cb.name }
 
-      # find first callback with satisfied dependencies
-      first_satisfied = lambda do
-        remaining_names = remaining.map { |cb| cb.name }
-        remaining.find do |cb|
-          cb.dependencies.each do |dep|
-            fail "Unknown #{phase.inspect} extension dependency: #{dep.inspect}" unless known_callbacks.index(dep)
-          end
-          satisfied = cb.dependencies.find { |dep| remaining_names.index(dep) } == nil
-          remaining.delete cb if satisfied
-        end
-      end
-
       # call each extension in order
       until remaining.empty?
-        callback = first_satisfied.call
+        callback = first_satisfied(remaining, known_callbacks)
         if callback.nil?
           hash = remaining.map { |cb| { cb.name => cb.dependencies} }
           fail "Unsatisfied dependencies in extensions for #{phase}: #{hash.inspect}"
         end
         callback.blocks.each { |b| b.call(self) }
       end
+    end
+
+    private
+
+    # find first callback with satisfied dependencies
+    def first_satisfied(r, known_callbacks)
+      remaining_names = r.map { |cb| cb.name }
+      res = r.find do |cb|
+        cb.dependencies.each do |dep|
+          fail "Unknown #{phase.inspect} extension dependency: #{dep.inspect}" unless known_callbacks.index(dep)
+        end
+        satisfied = cb.dependencies.find { |dep| remaining_names.index(dep) } == nil
+        cb if satisfied
+      end
+      r.delete res
     end
 
   end
@@ -941,8 +941,8 @@ module Buildr
   #   end
   #
   #   puts project('myapp:beans').version
-  def project(*args)
-    Project.project *args
+  def project(*args, &block)
+    Project.project *args, &block
   end
 
   # :call-seq:

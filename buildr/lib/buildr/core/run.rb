@@ -13,24 +13,27 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
+module Buildr
+  module Run
 
-# TODO: Antwrap 0.7 requires this monkeypatch, have it fixed.
-class Array #:nodoc:
-  alias :nitems :size
+    class JavaRunner < Base
+      include Buildr::JRebel
+
+      specify :name => :java, :languages => [:java, :scala, :groovy, :clojure]
+
+      def run(task)
+        fail "Missing :main option" unless task.options[:main]
+        cp = project.compile.dependencies + [project.path_to(:target, :classes), project.path_to(:target, :resources)] + task.classpath
+        Java::Commands.java(task.options[:main], {
+          :properties => jrebel_props(project).merge(task.options[:properties] || {}),
+          :classpath => cp,
+          :java_args => jrebel_args + (task.options[:java_args] || [])
+        })
+      end
+    end # JavaRunnner
+
+  end
 end
 
-require 'buildr/core/common'
-require 'buildr/core/application'
-require 'buildr/core/project'
-require 'buildr/core/environment'
-require 'buildr/core/help'
-require 'buildr/core/build'
-require 'buildr/core/filter'
-require 'buildr/core/compile'
-require 'buildr/core/test'
-require 'buildr/core/shell'
-require 'buildr/core/checks'
-require 'buildr/core/transports'
-require 'buildr/core/generate'
-require 'buildr/core/cc'
-require 'buildr/core/osx' if RUBY_PLATFORM =~ /darwin/
+Buildr::Run.runners << Buildr::Run::JavaRunner
+

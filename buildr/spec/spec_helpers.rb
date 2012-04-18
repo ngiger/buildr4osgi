@@ -14,7 +14,7 @@
 # the License.
 
 
-# This file gets loaded twice when running 'spec spec/*' and not with pleasent results,
+# This file gets loaded twice when running 'spec spec/*' and not with pleasant results,
 # so ignore the second attempt to load it.
 unless defined?(SpecHelpers)
 
@@ -22,25 +22,32 @@ unless defined?(SpecHelpers)
 
   # For testing we use the gem requirements specified on the buildr.gemspec
   spec = Gem::Specification.load(File.expand_path('../buildr.gemspec', File.dirname(__FILE__)))
-  if (spec.respond_to? :requirement)
-    spec.dependencies.each { |dep| gem dep.name, dep.requirement.to_s }
-  else
-    # Dependency.version_requirements deprecated in rubygems 1.3.6
-    spec.dependencies.each { |dep| gem dep.name, dep.version_requirements.to_s }
-  end
+  # Dependency.version_requirements deprecated in rubygems 1.3.6
+  spec.dependencies.select {|dep| dep.type == :runtime }.each { |dep| gem dep.name, (dep.respond_to?(:requirement) ? dep.requirement.to_s : dep.version_requirements.to_s) }
+
   # Make sure to load from these paths first, we don't want to load any
   # code from Gem library.
   $LOAD_PATH.unshift File.expand_path('../lib', File.dirname(__FILE__)),
                      File.expand_path('../addon', File.dirname(__FILE__))
 
   # Buildr uses autoload extensively, but autoload when running specs creates
-  # a problem -- we sandbox $LOADED_FEATURES, so we endup autoloading the same
+  # a problem -- we sandbox $LOADED_FEATURES, so we end up autoloading the same
   # module twice. This turns autoload into a require, which is not the right
   # thing, but will do for now.
   def autoload(symbol, path)
     require path
   end
   require 'buildr'
+  # load ecj
+  require 'buildr/java/ecj'
+  #Make ecj appear as a compiler that doesn't apply:
+  class Buildr::Compiler::Ecj
+    class << self
+      def applies_to?(project, task)
+        false
+      end
+    end
+  end
 
   # Give a chance for plugins to do a few things before requiring the sandbox.
   include SandboxHook if defined?(SandboxHook)
@@ -280,9 +287,9 @@ unless defined?(SpecHelpers)
 
     # Value covered by range. For example:
     #   (1..5).should cover(3)
-    def cover(value)
-      simple_matcher :cover do |given|
-        value >= given.min && value <= given.max
+    RSpec::Matchers.define :cover do |actual|
+      match do |range|
+        actual >= range.min && actual <= range.max
       end
     end
 
@@ -346,15 +353,16 @@ unless defined?(SpecHelpers)
 
   # Allow using matchers within the project definition.
   class Buildr::Project
-    include ::Spec::Matchers, SpecHelpers
+    include ::RSpec::Matchers, SpecHelpers
   end
 
 
-  Spec::Runner.configure do |config|
+  ::RSpec.configure do |config|
     # Make all Buildr methods accessible from test cases, and add various helper methods.
-    config.include Buildr, SpecHelpers
+    config.include Buildr
+    config.include SpecHelpers
 
-    # Sanbdox Buildr for each test.
+    # Sandbox Buildr for each test.
     config.include Sandbox
   end
 
