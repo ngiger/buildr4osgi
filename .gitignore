@@ -4,3 +4,5 @@ _site
 tmp
 rdoc
 buildr4osgi-*.gem
+*~
+pkg
