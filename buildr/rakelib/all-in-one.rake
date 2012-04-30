@@ -14,17 +14,38 @@
 # the License.
 
 desc "Create JRuby all-in-one distribution"
-task "all-in-one" => :gem do
-  version = "1.4.0"
+task "all-in-one" => 'all-in-one:all-in-one'
+
+namespace :'all-in-one' do
+
+  version = "1.6.4"
   jruby_distro = "jruby-bin-#{version}.tar.gz"
-  url = "http://jruby.kenai.com/downloads/#{version}/#{jruby_distro}"
+  url = "http://jruby.org.s3.amazonaws.com/downloads/#{version}/#{jruby_distro}"
   dir = "jruby-#{version}"
 
-  mkpath '_all-in-one'
-  cd '_all-in-one'
+  task "all-in-one" => [:gem,
+      # Prepare to run
+      :prepare,
+      # Download and extract JRuby
+      :download_and_extract,
+      # Cleanup JRuby distribution
+      :clean_dist,
+      # Install Buildr gem and dependencies
+      :install_dependencies,
+      # Add Buildr executables/scripts
+      :add_execs,
+      # Package distribution
+      :package
+    ]
 
-  # Download and extract JRuby
-  lambda do
+  desc 'Prepare to run'
+  task :prepare do
+    mkpath '_all-in-one'
+    cd '_all-in-one'
+  end
+
+  desc 'Download and extract JRuby'
+  task :download_and_extract do
     unless File.exist? jruby_distro
       puts "Downloading JRuby from #{url} ..."
       sh 'wget', url
@@ -37,10 +58,11 @@ task "all-in-one" => :gem do
     sh 'tar', 'xzf', jruby_distro
     puts "[X] Extracted JRuby"
     cd dir
-  end.call
+  end
 
-  # Cleanup JRuby distribution
-  lambda do
+  desc 'Cleanup JRuby distribution'
+  task :clean_dist do
+    puts 'Cleaning...'
     rm_rf 'docs'
     mkpath 'jruby-docs'
     mv Dir["COPYING*"], 'jruby-docs'
@@ -50,41 +72,50 @@ task "all-in-one" => :gem do
     rm_rf 'lib/ruby/gems/1.8/doc'
     rm_rf 'samples'
     rm_rf 'share'
-  end.call
+  end
 
-  # Install Buildr gem and dependencies
-  lambda do
+  desc 'Install Buildr gem and dependencies'
+  task :install_dependencies do
+    puts "Install rubygems-update"
+    sh "bin/jruby -S gem install rubygems-update"
+
+    puts "Upgrade Rubygems"
+    sh "bin/jruby -S gem update --system"
+
+    puts "Install ffi-ncurses"
+    sh "bin/jruby -S gem install ffi-ncurses"
+
     puts "Install Buildr gem ..."
     sh "bin/jruby", '-S', 'gem', 'install', FileList['../../pkg/*-java.gem'].first,
        '--no-rdoc', '--no-ri'
     puts "[X] Install Buildr gem"
-  end.call
+  end
 
-  # Add Buildr executables/scripts
-  lambda do
+  desc 'Add Buildr executables/scripts'
+  task :add_execs do
     cp 'bin/jruby.exe', 'bin/_buildr.exe'
     cp Dir["../../all-in-one/*"], 'bin'
-  end.call
+  end
 
-  # Package distribution
-  lambda do
+  desc 'Package distribution'
+  task :package do
     puts "Zipping distribution ..."
     cd '..'
-    new_dir  = "#{spec.name}-#{spec.version}"
+    new_dir  = "#{spec.name}-all-in-one-#{spec.version}"
     mv dir, new_dir
     zip = "#{new_dir}.zip"
     rm zip if File.exist? zip
     sh 'zip', '-q', '-r', zip, new_dir
     puts "[X] Zipped distribution"
-   
+
     puts "Tarring distribution ..."
     tar = "#{new_dir}.tar.gz"
     rm tar if File.exist? tar
     sh 'tar', 'czf', tar, new_dir
     puts "[X] Tarred distribution"
-    
+
     rm_rf new_dir
-  end.call
+  end
 
 end
 

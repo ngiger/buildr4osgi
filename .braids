@@ -1,8 +1,8 @@
---- 
-buildr: 
-  squashed: true
-  url: git://git.apache.org/buildr.git
+--- !ruby/object:Hash
+buildr: !ruby/object:Hash
   branch: trunk
+  remote: trunk/braid/buildr
+  revision: 445f46193d65ca850347ad25d541b314ff64f6c7
+  squashed: true
   type: git
-  revision: 2d6f74deb02233b6fea427981c0a0143ffbdc878
-  remote: braid/buildr
+  url: git://git.apache.org/buildr.git

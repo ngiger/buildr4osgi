@@ -13,10 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
-require 'erb'
-
-
 module Buildr
 
   # A filter knows how to copy files from one directory to another, applying mappings to the
@@ -188,9 +184,9 @@ module Buildr
             File.open(dest, 'wb') { |file| file.write mapped }
           else # no mapping
             cp source, dest
-            File.chmod(0664, dest)
           end
         end
+        File.chmod(File.stat(source).mode | 0200, dest)
       end
       touch target.to_s
       true
@@ -364,7 +360,6 @@ module Buildr
         else
           bnd = config.instance_eval { binding }
         end
-        require 'erb'
         ERB.new(content).result(bnd)
       end
 

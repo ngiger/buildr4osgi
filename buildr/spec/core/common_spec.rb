@@ -14,7 +14,7 @@
 # the License.
 
 
-require File.join(File.dirname(__FILE__), '../spec_helpers')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helpers'))
 
 describe Buildr.method(:struct) do
   before do
@@ -537,6 +537,15 @@ describe Buildr::Filter do
       File.readable?(file).should be_true
       File.writable?(file).should be_true
       (File.stat(file).mode & 0o200).should == 0o200
+    end
+  end
+
+  it 'should preserve mode bits except readable' do
+    # legacy: pending "Pending the release of the fix for JRUBY-4927" if RUBY_PLATFORM =~ /java/
+    Dir['src/*'].each { |file| File.chmod(0o755, file) }
+    @filter.from('src').into('target').run
+    Dir['target/*'].sort.each do |file|
+      (File.stat(file).mode & 0o755).should == 0o755
     end
   end
 end

@@ -13,11 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
-require 'rake'
-require 'buildr/core/util'
-
-
 module Buildr
 
   # :call-seq:
@@ -58,17 +53,18 @@ module Buildr
   end
 
   # :call-seq:
-  #   read(name) => string
-  #   read(name) { |string| ... } => result
+  #   read(args) => string
+  #   read(args) { |string| ... } => result
   #
   # Reads and returns the contents of a file. The second form yields to the block and returns
-  # the result of the block.
+  # the result of the block. The args passed to read are passed on to File.open.
   #
   # For example:
   #   puts read('README')
   #   read('README') { |text| puts text }
-  def read(name)
-    contents = File.open(name.to_s) { |f| f.read }
+  def read(*args)
+    args[0] = args[0].to_s
+    contents = File.open(*args) { |f| f.read }
     if block_given?
       yield contents
     else

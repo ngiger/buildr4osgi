@@ -14,7 +14,23 @@
 # the License.
 
 
-require File.join(File.dirname(__FILE__), '../spec_helpers')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helpers'))
+
+describe Buildr do
+  describe "#replace_extension" do
+    it "should replace filename extensions" do
+      replace = lambda { |filename, ext| Util.replace_extension(filename, ext) }
+
+      replace["foo.zip", "txt"].should eql("foo.txt")
+      replace["foo.", "txt"].should eql("foo.txt")
+      replace["foo", "txt"].should eql("foo.txt")
+
+      replace["bar/foo.zip", "txt"].should eql("bar/foo.txt")
+      replace["bar/foo.", "txt"].should eql("bar/foo.txt")
+      replace["bar/foo", "txt"].should eql("bar/foo.txt")
+    end
+  end
+end
 
 describe Hash do
   describe "#only" do
@@ -63,5 +79,63 @@ describe OpenObject do
 
   it "should implement only method like a hash" do
     @obj.only(:a).should == { :a => 1 }
+  end
+end
+
+describe File do
+  # Quite a few of the other specs depend on File#utime working correctly.
+  # These specs validate that utime is working as expected.
+  describe "#utime" do
+    it "should update mtime of directories" do
+      mkpath 'tmp'
+      begin
+        creation_time = File.mtime('tmp')
+
+        sleep 1
+        File.utime(nil, nil, 'tmp')
+
+        File.mtime('tmp').should > creation_time
+      ensure
+        Dir.rmdir 'tmp'
+      end
+    end
+
+    it "should update mtime of files" do
+      FileUtils.touch('tmp')
+      begin
+        creation_time = File.mtime('tmp')
+
+        sleep 1
+        File.utime(nil, nil, 'tmp')
+
+        File.mtime('tmp').should > creation_time
+      ensure
+        File.delete 'tmp'
+      end
+    end
+
+    it "should be able to set mtime in the past" do
+      FileUtils.touch('tmp')
+      begin
+        time = Time.at((Time.now - 10).to_i)
+        File.utime(time, time, 'tmp')
+
+        File.mtime('tmp').should == time
+      ensure
+        File.delete 'tmp'
+      end
+    end
+
+    it "should be able to set mtime in the future" do
+      FileUtils.touch('tmp')
+      begin
+        time = Time.at((Time.now + 10).to_i)
+        File.utime(time, time, 'tmp')
+
+        File.mtime('tmp').should == time
+      ensure
+        File.delete 'tmp'
+      end
+    end
   end
 end

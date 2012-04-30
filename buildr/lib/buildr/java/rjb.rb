@@ -125,6 +125,7 @@ module Java
 
     def method_missing(sym, *args, &block) #:nodoc:
       raise ArgumentError, 'No arguments expected' unless args.empty?
+      Java.load # need to load RJB's classpath now!
       name = sym.to_s
       return ::Rjb.import(name) if name =~ /^[[:upper:]]/
       __package__ name
@@ -133,12 +134,10 @@ module Java
   private
 
     def __package__(name) #:nodoc:
-      const = name.split('.').map { |part| part.gsub(/^./) { |char| char.upcase } }.join
-      return const_get(const) if constants.include?(const) || constants.include?(const.to_sym)
-      package = Module.new
-      package.extend Package
-      package.instance_variable_set :@name, name
-      const_set(const, package)
+      Module.new.tap do |m|
+        m.extend Package
+        m.instance_variable_set :@name, name
+      end
     end
 
   end

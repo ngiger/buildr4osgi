@@ -13,10 +13,6 @@
 # License for the specific language governing permissions and limitations under
 # the License.
 
-
-require 'buildr/java/pom'
-
-
 module Buildr
   module Generate #:nodoc:
 
@@ -47,6 +43,8 @@ module Buildr
           if root
             script = HEADER.split("\n")
             header = <<-EOF
+#{"require 'buildr/scala'\n" if Dir.glob(path + "/**/*.scala").size > 0}
+#{"require 'buildr/groovy'\n" if Dir.glob(path + "/**/*.groovy").size > 0}
 # Version number for this release
 VERSION_NUMBER = "1.0.0"
 # Group identifier for your projects
@@ -54,7 +52,7 @@ GROUP = "#{name}"
 COPYRIGHT = ""
 
 # Specify Maven 2.0 remote repositories here, like this:
-repositories.remote << "http://www.ibiblio.org/maven2/"
+repositories.remote << "http://repo1.maven.org/maven2"
 
 desc "The #{name.capitalize} project"
 define "#{name}" do
@@ -124,7 +122,7 @@ define "#{name}" do
             legacy = repository["layout"].to_s =~ /legacy/
             !legacy
           } rescue nil
-          repositories = [{"name" => "Standard maven2 repository", "url" => "http://www.ibiblio.org/maven2"}] if repositories.nil? || repositories.empty?
+          repositories = [{"name" => "Standard maven2 repository", "url" => "http://repo1.maven.org/maven2"}] if repositories.nil? || repositories.empty?
           repositories.each do |repository|
             name, url = repository["name"], repository["url"]
             script << "# #{name}"

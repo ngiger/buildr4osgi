@@ -14,13 +14,13 @@
 # the License.
 
 
-require File.join(File.dirname(__FILE__), '../spec_helpers')
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'spec_helpers'))
 
 
 describe URI, '#download' do
   before do
     write @source = 'source', @content = 'Just a file'
-    @uri = URI("file://#{File.expand_path(@source)}")
+    @uri = URI(URI.escape("file://#{File.expand_path(@source)}"))
     @target = 'target'
   end
 
@@ -60,7 +60,14 @@ describe URI, '#upload' do
   before do
     write @source = 'source', @content = 'Just a file'
     @target = 'target'
-    @uri = URI("file://#{File.expand_path(@target)}")
+    @uri = URI(URI.escape("file://#{File.expand_path(@target)}"))
+  end
+
+  it 'should preserve file permissions if uploading to a file' do
+    File.chmod(0666, @source)
+    s = File.stat(@source).mode
+    @uri.upload @source
+    File.stat(@target).mode.should eql(s)
   end
 
   it 'should upload file if found' do
@@ -149,7 +156,7 @@ end
 describe URI::FILE, '#read' do
   before do
     @filename = 'readme'
-    @uri = URI("file:///#{File.expand_path(@filename)}")
+    @uri = URI(URI.escape("file:///#{File.expand_path(@filename)}"))
     @content = 'Readme. Please!'
     write 'readme', @content
   end
@@ -180,7 +187,7 @@ end
 describe URI::FILE, '#write' do
   before do
     @filename = 'readme'
-    @uri = URI("file:///#{File.expand_path(@filename)}")
+    @uri = URI(URI.escape("file:///#{File.expand_path(@filename)}"))
     @content = 'Readme. Please!'
   end
 
@@ -452,14 +459,14 @@ describe URI::SFTP, '#read' do
 
   it 'should read contents of file and return it' do
     file = mock('Net::SFTP::Operations::File')
-    file.should_receive(:read).with(URI::RW_CHUNK_SIZE).once.and_return(@content, nil)
+    file.should_receive(:read).with(URI::RW_CHUNK_SIZE).once.and_return(@content)
     @file_factory.should_receive(:open).with('/root/path/readme', 'r').and_yield(file)
     @uri.read.should eql(@content)
   end
 
   it 'should read contents of file and pass it to block' do
     file = mock('Net::SFTP::Operations::File')
-    file.should_receive(:read).with(URI::RW_CHUNK_SIZE).once.and_return(@content, nil)
+    file.should_receive(:read).with(URI::RW_CHUNK_SIZE).once.and_return(@content)
     @file_factory.should_receive(:open).with('/root/path/readme', 'r').and_yield(file)
     content = ''
     @uri.read do |chunk|
