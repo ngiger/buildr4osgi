@@ -72,6 +72,7 @@ describe OSGi::Version do
     (OSGi::Version.new('1.9.9') > "2.0.0").should be_false
     (OSGi::Version.new('1.54.112') < "2.2.0").should be_true
     (OSGi::Version.new('1.0.3') > "1.0.2").should be_true
+    (OSGi::Version.new('1.0.14') > "1.0.9").should be_true
     (OSGi::Version.new('2.3.4') == "2.3.4").should be_true
     (OSGi::Version.new('2.3.4') <=> "2.3.4").should eql(0)
   end
