@@ -275,10 +275,16 @@ module OSGi
         manifest["Bundle-SymbolicName"] ||= self.name.split(":").last # if it was resetted to nil, we force the id to be added back.
         
         plugin.with :manifest=> manifest, :meta_inf=>meta_inf
+        unless compile.target.nil?
+          plugin.path('.').include compile.target, :as=>'.'
+          plugin.path('.').include properties.target, :as=>'.' unless properties.target.nil?
+        end
         unless manifest["Bundle-ClassPath"].nil? || compile.target.nil?
-          entry = manifest["Bundle-ClassPath"].split(",").first
-          plugin.path(entry).include compile.target, :as=>'.'
-          plugin.path(entry).include properties.target, :as=>'.' unless properties.target.nil?
+          plugin.with :manifest=> manifest, :meta_inf=>meta_inf
+          manifest["Bundle-ClassPath"].split(",").each do |entry|
+            next if entry.eql?('bin') or  entry.eql?('bin/')  # skip this at this is the default output of an eclipse
+            plugin.include project._(entry), :as=>entry
+          end
           plugin.with [resources.target, p_r.target].compact
         else
           plugin.with [compile.target, resources.target, p_r.target, properties.target].compact
