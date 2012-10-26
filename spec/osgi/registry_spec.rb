@@ -50,10 +50,14 @@ describe OSGi::Registry do
     lambda {OSGi.registry.containers = ["hello"]}.should_not raise_error
   end
   
-  it 'should throw an exception when modifying the containers in the registry after the resolved_containers method is called' do
+  it 'should throw an exception when modifying the containers in the registry after the resolved_containers method is called. Ruby is #{RUBY_VERSION}' do
     foo = define('foo')
     OSGi.registry.resolved_containers
-    lambda {OSGi.registry.containers << "hello"}.should raise_error(TypeError)
+    if /1\.8/.match(RUBY_VERSION)
+      lambda {OSGi.registry.containers << "hello"}.should raise_error(TypeError)
+    else
+      lambda {OSGi.registry.containers << "hello"}.should raise_error(RuntimeError, /can't modify frozen Array/)
+    end
     lambda {OSGi.registry.containers = ["hello"]}.should raise_error(RuntimeError, /Cannot set containers, containers have been resolved already/)
   end
 end
