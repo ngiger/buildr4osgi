@@ -277,12 +277,13 @@ module OSGi
         plugin.with :manifest=> manifest, :meta_inf=>meta_inf
         unless compile.target.nil?
           plugin.path('.').include compile.target, :as=>'.'
-          plugin.path('.').include properties.target, :as=>'.' unless properties.target.nil?
         end
+        plugin.path('.').include properties.target, :as=>'.' unless properties.target.nil?
         unless manifest["Bundle-ClassPath"].nil? || compile.target.nil?
           plugin.with :manifest=> manifest, :meta_inf=>meta_inf
           manifest["Bundle-ClassPath"].split(",").each do |entry|
-            next if entry.eql?('bin') or  entry.eql?('bin/')  # skip this at this is the default output of an eclipse
+            next if File.dirname(entry).eql?('bin') # skip this at this is the default output of an eclipse
+            next if File.dirname(entry).eql?('.')   # skip this at this sometimes given as argument, but does not make sense
             plugin.include project._(entry), :as=>entry
           end
           plugin.with [resources.target, p_r.target].compact
